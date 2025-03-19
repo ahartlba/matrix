@@ -9,7 +9,7 @@
 
 #include <algorithm>
 
-#include "Matrix.h"
+#include "matrix.h"
 #include <cmath>
 #include <vector>
 
