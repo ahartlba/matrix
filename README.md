@@ -1,2 +1,3 @@
-# matrix
-Cpp Matrix Header Implementation
+# Matrix
+
+Template based Matrix Implementation with low overhead
