@@ -134,7 +134,7 @@ namespace SimpleMatrix
 
         void ReduceSize(const int h, const int w)
         {
-            if (h * w < mRows * mCols)
+            if ((h <= mRows) && (w <= mCols))
             {
                 auto newData = new T[h * w];
                 for (size_t i = 0; i < h; ++i)
