@@ -26,6 +26,10 @@ namespace SimpleMatrix
 
     public:
         Matrix() : mRows(0), mCols(0), mStorageType(StorageType::ROW_MAJOR), data(nullptr) {}
+        ~Matrix() {
+            delete[] data;
+            data = nullptr;
+        }
         Matrix(const int nRows, const int nCols, const StorageType st = StorageType::ROW_MAJOR) : mRows(nRows), mCols(nCols), mStorageType(st)
         {
             if (nRows > 0 && nCols > 0)
