@@ -98,6 +98,12 @@ namespace SimpleMatrix
                 data[i] *= factor;
             return *this;
         }
+        Matrix &operator/=(T factor)
+        {
+            for (int i = 0; i < mRows * mCols; i++)
+                data[i] /= factor;
+            return *this;
+        }
         Matrix &operator+=(const Matrix &mat2)
         {
             if (this->mRows != mat2.mRows || this->mCols != mat2.mCols)
@@ -134,6 +140,20 @@ namespace SimpleMatrix
         {
             for (size_t i = 0; i < mRows * mCols; ++i)
                 data[i] = val;
+        }
+        void SetDiag(T val)
+        {
+            auto x = std::min(mRows, mCols);
+            for (size_t i = 0; i < x; ++i)
+                (*this)(i, i) = val;
+        }
+
+        void ElemMult(const Matrix<T>& mat){
+            if (mCols != mat.Cols() || mRows != mat.Rows())
+                throw std::invalid_argument("Sizes do not Match!");
+            for (size_t i=0; i < mRows; ++i)
+                for (size_t j=0; j < mCols; ++j)
+                    (*this)(i, j) *= mat(i, j);
         }
 
         void ReduceSize(const int h, const int w)
@@ -190,6 +210,7 @@ namespace SimpleMatrix
             os << "]" << std::endl;
         }
     };
+
     template <typename T>
     Matrix<T> operator*(const Matrix<T> &a, const Matrix<T> &b)
     {
@@ -201,6 +222,16 @@ namespace SimpleMatrix
                 for (int k = 0; k < a.Cols(); k++)
                     c(i, j) += a(i, k) * b(k, j);
         return c;
+    }
+
+    template <typename T>
+    Matrix<T> ElemMult(const Matrix<T>& a, const Matrix<T>& b){
+        if (a.Cols() != b.Cols() || a.Rows() != b.Rows())
+            throw std::invalid_argument("Sizes do not Match!");
+        Matrix<T> c(a.Cols(), a.Rows());
+        for (size_t i=0; i < a.Rows(); ++i)
+            for (size_t j=0; j < a.Cols(); ++j)
+                c(i, j) = a(i, j) * b(i, j);
     }
 
     template <typename T>
@@ -217,6 +248,14 @@ namespace SimpleMatrix
         }
 
         return c;
+    }
+
+    template <typename T>
+    Matrix<T> Eye(const int n)
+    {
+        Matrix<T> e(n, n, 0);
+        e.SetDiag(1);
+        return e;
     }
 }
 

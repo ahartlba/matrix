@@ -5,113 +5,34 @@
  */
 
 #pragma once
-#pragma once
-
-#include <algorithm>
 
 #include "matrix.h"
 #include <cmath>
 #include <vector>
 
 // Define a tolerance for floating point comparisons
-constexpr double EPSILON = 1e-10;
 
 namespace LinAlg
 {
-    template <typename T>
-    void EigenDecomposition(const SimpleMatrix::Matrix<T> &A, std::vector<T> &eigenvalues, std::vector<std::vector<T>> &eigenvectors)
-    {
-        int n = A.Rows();
-        SimpleMatrix::Matrix<T> V(n, n, 0);
-
-        // Initialize V to the identity matrix
-        for (int i = 0; i < n; ++i)
-        {
-            V(i, i) = 1;
-        }
-
-        SimpleMatrix::Matrix<T> A_copy = A;
-
-        // Jacobi rotation method for eigen decomposition
-        for (int iteration = 0; iteration < 100; ++iteration)
-        {
-            int p, q;
-            T maxOffDiag = 0;
-
-            for (int i = 0; i < n; ++i)
-            {
-                for (int j = i + 1; j < n; ++j)
-                {
-                    if (std::abs(A_copy(i, j)) > maxOffDiag)
-                    {
-                        maxOffDiag = std::abs(A_copy(i, j));
-                        p = i;
-                        q = j;
-                    }
-                }
-            }
-
-            if (maxOffDiag < EPSILON)
-                break;
-
-            T theta = 0.5 * std::atan2(2 * A_copy(p, q), A_copy(p, p) - A_copy(q, q));
-            T cosTheta = std::cos(theta);
-            T sinTheta = std::sin(theta);
-
-            for (int i = 0; i < n; ++i)
-            {
-                T temp1 = A_copy(i, p);
-                T temp2 = A_copy(i, q);
-                A_copy(i, p) = cosTheta * temp1 - sinTheta * temp2;
-                A_copy(i, q) = sinTheta * temp1 + cosTheta * temp2;
-            }
-
-            for (int i = 0; i < n; ++i)
-            {
-                T temp1 = A_copy(p, i);
-                T temp2 = A_copy(q, i);
-                A_copy(p, i) = cosTheta * temp1 - sinTheta * temp2;
-                A_copy(q, i) = sinTheta * temp1 + cosTheta * temp2;
-            }
-
-            T temp1 = V(p, p);
-            T temp2 = V(q, p);
-            V(p, p) = cosTheta * temp1 - sinTheta * temp2;
-            V(q, p) = sinTheta * temp1 + cosTheta * temp2;
-        }
-
-        // Copy diagonal elements as eigenvalues
-        for (int i = 0; i < n; ++i)
-        {
-            eigenvalues[i] = A_copy(i, i);
-        }
-
-        // Copy eigenvectors
-        for (int i = 0; i < n; ++i)
-        {
-            for (int j = 0; j < n; ++j)
-            {
-                eigenvectors[i][j] = V(i, j);
-            }
-        }
-    }
+    using SimpleMatrix::Matrix;
+    static double EPSILON = 1e-10;
 
     template <typename T>
-    void SVD(const SimpleMatrix::Matrix<T> &A, SimpleMatrix::Matrix<T> &U, SimpleMatrix::Matrix<T> &S, SimpleMatrix::Matrix<T> &V)
+    void SVD(const Matrix<T> &A, Matrix<T> &U, Matrix<T> &S, Matrix<T> &V)
     {
         int m = A.Rows();
         int n = A.Cols();
 
         // Initialize U and V as identity matrices
-        U = SimpleMatrix::Matrix<T>(m, m, 0);
-        V = SimpleMatrix::Matrix<T>(n, n, 0);
+        U = Matrix<T>(m, m, 0);
+        V = Matrix<T>(n, n, 0);
         for (int i = 0; i < m; ++i)
             U(i, i) = 1;
         for (int i = 0; i < n; ++i)
             V(i, i) = 1;
 
         // Compute A^T * A
-        SimpleMatrix::Matrix<T> AtA = A.Transpose() * A;
+        Matrix<T> AtA = A.Transpose() * A;
 
         std::vector<T> singularValues(n, 0);
         std::vector<std::vector<T>> vMatrix(n, std::vector<T>(n, 0));
@@ -120,7 +41,7 @@ namespace LinAlg
         EigenDecomposition(AtA, singularValues, vMatrix);
 
         // Fill S with singular values and construct V from eigenvectors
-        S = SimpleMatrix::Matrix<T>(m, n, 0);
+        S = Matrix<T>(m, n, 0);
         for (int i = 0; i < std::min(m, n); ++i)
         {
             S(i, i) = std::sqrt(std::abs(singularValues[i]));
@@ -136,7 +57,7 @@ namespace LinAlg
         }
 
         // Compute U as A * V * S^{-1}
-        SimpleMatrix::Matrix<T> S_inv(n, m, 0);
+        Matrix<T> S_inv(n, m, 0);
         for (int i = 0; i < std::min(m, n); ++i)
         {
             if (S(i, i) > EPSILON)
@@ -148,7 +69,7 @@ namespace LinAlg
     }
     /* Inverse using Gaussian elimination with partial pivoting */
     template <typename T>
-    SimpleMatrix::Matrix<T> Invert(const SimpleMatrix::Matrix<T> &A)
+    Matrix<T> Invert(const Matrix<T> &A)
     {
         int n = A.Rows();
         if (A.Cols() != n)
@@ -156,8 +77,8 @@ namespace LinAlg
             throw std::invalid_argument("Matrix must be square to compute its inverse");
         }
 
-        SimpleMatrix::Matrix<T> inv(A); // Start with a copy of A
-        SimpleMatrix::Matrix<T> identity(n, n, 0);
+        Matrix<T> inv(A); // Start with a copy of A
+        Matrix<T> identity(n, n, 0);
 
         // Initialize identity matrix
         for (int i = 0; i < n; ++i)
@@ -218,4 +139,106 @@ namespace LinAlg
         }
         return identity;
     }
+
+    template <typename T>
+    struct EigenResult
+    {
+        Matrix<T> eigenvectors; // each column is an eigenvector
+        Matrix<T> eigenvalues;  // column matrix of eigenvalues
+    };
+
+    template <typename T>
+    void QRDecomposition(const Matrix<T> &A, Matrix<T> &Q, Matrix<T> &R)
+    {
+        int n = A.Rows();
+
+        for (int k = 0; k < n; ++k)
+        {
+            for (int i = 0; i < n; ++i)
+                Q(i, k) = A(i, k);
+
+            for (int j = 0; j < k; ++j)
+            {
+                T dot = 0;
+                for (int i = 0; i < n; ++i)
+                    dot += Q(i, j) * A(i, k);
+                R(j, k) = dot;
+                for (int i = 0; i < n; ++i)
+                    Q(i, k) -= dot * Q(i, j);
+            }
+
+            T norm = 0;
+            for (int i = 0; i < n; ++i)
+                norm += Q(i, k) * Q(i, k);
+            norm = std::sqrt(norm);
+            R(k, k) = norm;
+            for (int i = 0; i < n; ++i)
+                Q(i, k) /= norm;
+        }
+    }
+
+    template <typename T>
+    EigenResult<T> EigenDecomposition(Matrix<T> A, int maxIter = 100) {
+        if (A.Rows() != A.Cols())
+            throw std::invalid_argument("Matrix must be square.");
+
+        int n = A.Rows();
+        Matrix<T> Q(n, n);
+        Matrix<T> R(n, n);
+        Matrix<T> A_(A);
+        Matrix<T> Q_(n, n);
+        Matrix<T> R_(n, n);
+        Matrix<T> eigenvectors = SimpleMatrix::Eye<T>(n);
+
+        // shifted iteration for eigenvalues
+        for (int iter = 0; iter < maxIter; ++iter) {
+            T shift = A(n - 1, n - 1);
+
+            // Shift A: A - shift * I
+            for (int i = 0; i < n; ++i)
+                A(i, i) -= shift;
+
+            QRDecomposition(A, Q, R);
+            A = R * Q;
+
+            // Unshift A: A + shift * I
+            for (int i = 0; i < n; ++i)
+                A(i, i) += shift;
+
+        }
+
+        // unshifted iteration for eigenvectors
+        for (int iter = 0; iter < maxIter; ++iter) {
+            QRDecomposition(A_, Q_, R_);
+            A_ = R_ * Q_;
+            eigenvectors = eigenvectors * Q_;
+        }
+
+        // Normalize eigenvectors (columns)
+        for (int j = 0; j < n; ++j) {
+            T norm = 0;
+            for (int i = 0; i < n; ++i)
+                norm += eigenvectors(i, j) * eigenvectors(i, j);
+            norm = std::sqrt(norm);
+            for (int i = 0; i < n; ++i)
+                eigenvectors(i, j) /= norm;
+        }
+
+        Matrix<T> eigenvalues(n, 1);
+        for (int i = 0; i < n; ++i)
+            eigenvalues(i, 0) = A(i, i);
+
+        return { eigenvectors, eigenvalues };
+    }
+
+
+
 };
+
+template <typename T>
+inline std::ostream &operator<<(std::ostream &os, const LinAlg::EigenResult<T> &res)
+{
+    os << "Eigenvalues: " << res.eigenvalues << "\n";
+    os << "Eigenvectors: " << res.eigenvectors << std::endl;
+    return os;
+}
