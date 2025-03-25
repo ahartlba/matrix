@@ -120,6 +120,22 @@ namespace SimpleMatrix
                 data[i] += val;
             return *this;
         }
+        Matrix &operator-=(const Matrix &mat2)
+        {
+            if (this->mRows != mat2.mRows || this->mCols != mat2.mCols)
+                throw std::invalid_argument("Sizes do not Match!");
+
+            for (int i = 0; i < mRows * mCols; i++)
+                data[i] -= mat2.data[i];
+            return *this;
+        }
+
+        Matrix &operator-=(const T val)
+        {
+            for (int i = 0; i < mRows * mCols; i++)
+                data[i] -= val;
+            return *this;
+        }
 
         inline T &operator()(int i, int j)
         {
@@ -175,6 +191,18 @@ namespace SimpleMatrix
             }
         }
 
+        bool IsSymmetric()
+        {
+            if (mRows != mCols)
+                return false;
+
+            for (size_t j = 0; j < mRows; ++j)
+                for (size_t i = j+1; i < mRows; ++i)
+                    if (std::abs((*this)(i, j) - (*this)(j, i)) >= 1e-10)
+                        return false;
+            return true;
+        }
+
         Matrix &Transposed()
         {
             std::swap(mRows, mCols);
@@ -221,6 +249,13 @@ namespace SimpleMatrix
             for (int j = 0; j < b.Cols(); j++)
                 for (int k = 0; k < a.Cols(); k++)
                     c(i, j) += a(i, k) * b(k, j);
+        return c;
+    }
+    template <typename T>
+    Matrix<T> operator*(const Matrix<T> &a, const T val)
+    {
+        Matrix<T> c(a);
+        c*= val;
         return c;
     }
 
